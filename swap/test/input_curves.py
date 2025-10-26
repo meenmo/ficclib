@@ -1,0 +1,91 @@
+from datetime import date
+
+CURVE_DATE = date(2025, 10, 20)
+
+# Allowed OIS/ESTR tenors only (filtered)
+ESTR_QUOTES = [
+    {"rate": 1.928, "tenor": "1W", "ticker": "EESWE1Z BGN Curncy"},
+    {"rate": 1.927, "tenor": "2W", "ticker": "EESWE2Z BGN Curncy"},
+    {"rate": 1.925, "tenor": "1M", "ticker": "EESWEA BGN Curncy"},
+    {"rate": 1.926, "tenor": "2M", "ticker": "EESWEB BGN Curncy"},
+    {"rate": 1.916, "tenor": "3M", "ticker": "EESWEC BGN Curncy"},
+    {"rate": 1.9097, "tenor": "4M", "ticker": "EESWED BGN Curncy"},
+    {"rate": 1.904, "tenor": "5M", "ticker": "EESWEE BGN Curncy"},
+    {"rate": 1.891, "tenor": "6M", "ticker": "EESWEF BGN Curncy"},
+    {"rate": 1.8798, "tenor": "7M", "ticker": "EESWEG BGN Curncy"},
+    {"rate": 1.8695, "tenor": "8M", "ticker": "EESWEH BGN Curncy"},
+    {"rate": 1.86, "tenor": "9M", "ticker": "EESWEI BGN Curncy"},
+    {"rate": 1.8504, "tenor": "10M", "ticker": "EESWEJ BGN Curncy"},
+    {"rate": 1.84375, "tenor": "11M", "ticker": "EESWEK BGN Curncy"},
+    {"rate": 1.8377, "tenor": "1Y", "ticker": "EESWE1 BGN Curncy"},
+    {"rate": 1.81235, "tenor": "18M", "ticker": "EESWE1F BGN Curncy"},
+    {"rate": 1.825, "tenor": "2Y", "ticker": "EESWE2 BGN Curncy"},
+    {"rate": 1.88925, "tenor": "3Y", "ticker": "EESWE3 BGN Curncy"},
+    {"rate": 1.9665, "tenor": "4Y", "ticker": "EESWE4 BGN Curncy"},
+    {"rate": 2.04525, "tenor": "5Y", "ticker": "EESWE5 BGN Curncy"},
+    {"rate": 2.121, "tenor": "6Y", "ticker": "EESWE6 BGN Curncy"},
+    {"rate": 2.192, "tenor": "7Y", "ticker": "EESWE7 BGN Curncy"},
+    {"rate": 2.2642, "tenor": "8Y", "ticker": "EESWE8 BGN Curncy"},
+    {"rate": 2.329, "tenor": "9Y", "ticker": "EESWE9 BGN Curncy"},
+    {"rate": 2.391, "tenor": "10Y", "ticker": "EESWE10 BGN Curncy"},
+    {"rate": 2.44905, "tenor": "11Y", "ticker": "EESWE11 BGN Curncy"},
+    {"rate": 2.50015, "tenor": "12Y", "ticker": "EESWE12 BGN Curncy"},
+    {"rate": 2.61715, "tenor": "15Y", "ticker": "EESWE15 BGN Curncy"},
+    {"rate": 2.6993, "tenor": "20Y", "ticker": "EESWE20 BGN Curncy"},
+    {"rate": 2.7024, "tenor": "30Y", "ticker": "EESWE30 BGN Curncy"},
+    {"rate": 2.67545, "tenor": "40Y", "ticker": "EESWE40 BGN Curncy"},
+    {"rate": 2.62495, "tenor": "50Y", "ticker": "EESWE50 BGN Curncy"},
+]
+
+EURIBOR3M_QUOTES = [
+    {"rate": 2.015, "tenor": "3M", "ticker": "EUR003M Index"},
+    {"rate": 1.98715, "tenor": "1Y", "ticker": "EUSW1V3 BGN CURNCY"},
+    {"rate": 1.98, "tenor": "2Y", "ticker": "EUSW2V3 BGN CURNCY"},
+    {"rate": 2.04375, "tenor": "3Y", "ticker": "EUSW3V3 BGN CURNCY"},
+    {"rate": 2.12065, "tenor": "4Y", "ticker": "EUSW4V3 BGN CURNCY"},
+    {"rate": 2.1959, "tenor": "5Y", "ticker": "EUSW5V3 BGN CURNCY"},
+    {"rate": 2.2685, "tenor": "6Y", "ticker": "EUSW6V3 BGN CURNCY"},
+    {"rate": 2.33955, "tenor": "7Y", "ticker": "EUSW7V3 BGN CURNCY"},
+    {"rate": 2.4079, "tenor": "8Y", "ticker": "EUSW8V3 BGN CURNCY"},
+    {"rate": 2.47234, "tenor": "9Y", "ticker": "EUSW9V3 BGN CURNCY"},
+    {"rate": 2.53309, "tenor": "10Y", "ticker": "EUSW10V3 BGN CURNCY"},
+    {"rate": 2.58945, "tenor": "11Y", "ticker": "EUSW11V3 BGN CURNCY"},
+    {"rate": 2.64, "tenor": "12Y", "ticker": "EUSW12V3 BGN CURNCY"},
+    {"rate": 2.75669, "tenor": "15Y", "ticker": "EUSW15V3 BGN CURNCY"},
+    {"rate": 2.8356, "tenor": "20Y", "ticker": "EUSW20V3 BGN CURNCY"},
+    {"rate": 2.841, "tenor": "25Y", "ticker": "EUSW25V3 BGN CURNCY"},
+    {"rate": 2.83261, "tenor": "30Y", "ticker": "EUSW30V3 BGN CURNCY"},
+    {"rate": 2.795, "tenor": "40Y", "ticker": "EUSW40V3 BGN CURNCY"},
+    {"rate": 2.736, "tenor": "50Y", "ticker": "EUSW50V3 BGN CURNCY"},
+]
+
+EURIBOR6M_QUOTES = [
+    {"rate": 2.1, "tenor": "6M", "ticker": "EUR006M CURNCY"},
+    {"rate": 2.083, "tenor": "1Y", "ticker": "EUSA1 BGN CURNCY"},
+    {"rate": 2.057, "tenor": "18M", "ticker": "EUSA1F BGN CURNCY"},
+    {"rate": 2.071, "tenor": "2Y", "ticker": "EUSA2 BGN CURNCY"},
+    {"rate": 2.13182, "tenor": "3Y", "ticker": "EUSA3 BGN CURNCY"},
+    {"rate": 2.203, "tenor": "4Y", "ticker": "EUSA4 BGN CURNCY"},
+    {"rate": 2.272, "tenor": "5Y", "ticker": "EUSA5 BGN CURNCY"},
+    {"rate": 2.34, "tenor": "6Y", "ticker": "EUSA6 BGN CURNCY"},
+    {"rate": 2.407, "tenor": "7Y", "ticker": "EUSA7 BGN CURNCY"},
+    {"rate": 2.4694, "tenor": "8Y", "ticker": "EUSA8 BGN CURNCY"},
+    {"rate": 2.5283, "tenor": "9Y", "ticker": "EUSA9 BGN CURNCY"},
+    {"rate": 2.5827, "tenor": "10Y", "ticker": "EUSA10 BGN CURNCY"},
+    {"rate": 2.63214, "tenor": "11Y", "ticker": "EUSA11 BGN CURNCY"},
+    {"rate": 2.677, "tenor": "12Y", "ticker": "EUSA12 BGN CURNCY"},
+    {"rate": 2.77925, "tenor": "15Y", "ticker": "EUSA15 BGN CURNCY"},
+    {"rate": 2.84305, "tenor": "20Y", "ticker": "EUSA20 BGN CURNCY"},
+    {"rate": 2.839, "tenor": "25Y", "ticker": "EUSA25 BGN CURNCY"},
+    {"rate": 2.82395, "tenor": "30Y", "ticker": "EUSA30 BGN CURNCY"},
+    {"rate": 2.78025, "tenor": "40Y", "ticker": "EUSA40 BGN CURNCY"},
+    {"rate": 2.717, "tenor": "50Y", "ticker": "EUSA50 BGN CURNCY"},
+]
+
+__all__ = [
+    "CURVE_DATE",
+    "ESTR_QUOTES",
+    "EURIBOR3M_QUOTES",
+    "EURIBOR6M_QUOTES",
+]
+
