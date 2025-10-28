@@ -86,9 +86,6 @@ ref_data/
 ref_date/
 .ruff_cache/
 
-ktb/
-utils/
-
 # Swap subdirectory exclusions
 swap/.venv/
 swap/.git/
