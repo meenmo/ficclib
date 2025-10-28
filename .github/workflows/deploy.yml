@@ -1,0 +1,45 @@
+name: Deploy on main (self-hosted)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-ficclib
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.repository_owner == 'meenmo'
+    runs-on: [self-hosted, linux, ficclib-prod]
+    environment: production
+    steps:
+      - name: Who am I
+        run: whoami
+
+      - name: Mark repo path as safe
+        run: git config --global --add safe.directory /home/meenmo/applications/ficclib
+
+      - name: Deploy if main updated
+        working-directory: /home/meenmo/applications/ficclib
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Starting deployment on production server..."
+          git remote set-url origin https://github.com/meenmo/ficclib.git
+          git fetch origin main
+          LOCAL=$(git rev-parse HEAD)
+          REMOTE=$(git rev-parse origin/main)
+          echo "Local:  $LOCAL"
+          echo "Remote: $REMOTE"
+          if [ "$LOCAL" != "$REMOTE" ]; then
+            echo "Update detected. Pulling changes..."
+            git reset --hard origin/main
+            echo "ficclib updated to the latest main branch."
+          else
+            echo "Already up-to-date."
+          fi
