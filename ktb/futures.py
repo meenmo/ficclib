@@ -1,11 +1,12 @@
 from datetime import datetime
 from typing import List, Tuple
 
-from sympy import Symbol, nsolve
+import mpmath
+from sympy import Symbol, nsolve, sympify, lambdify
 
+from ficclib.utils.date import to_date, futures_termination_date
 from .bond import KTB
 from .params_loader import FuturesParams
-from ficclib.utils.date import to_date, futures_termination_date
 
 
 class KTB_Futures:
@@ -99,7 +100,7 @@ class KTB_Futures:
 
         # Implied Yield
         try:
-            return float(nsolve(equation_fwd_price - fwd_price, 0))
+            return self.solve_implied_yield(equation_fwd_price, fwd_price)
         except Exception:
             raise Exception("Failed to solve for forward yield")
 
@@ -139,9 +140,11 @@ class KTB_Futures:
         coupon_amt = face * (coupon_rate_pct / 2) / 100.0
 
         price = 0.0
-        for i in range(num_pymt):
-            price += coupon_amt / (1 + y / 2) ** i
-        price += face / (1 + y / 2) ** i  # i == num_pymt - 1
+        for k in range(num_pymt):
+            price += coupon_amt / (1 + y / 2) ** k
+        # Add principal at the final payment index; if no payments remain, treat as immediate (k=0)
+        last_idx = max(num_pymt - 1, 0)
+        price += face / (1 + y / 2) ** last_idx
 
         d = (pymt_date2 - pricing_date).days
         t = max((pymt_date2 - pymt_date1).days, 1)
@@ -150,3 +153,67 @@ class KTB_Futures:
             return float(expr)  # numeric branch
         except TypeError:
             return expr  # symbolic branch for nsolve
+        
+    @staticmethod
+    def solve_implied_yield(equation_fwd_price, fwd_price,
+                            seed=0.028,
+                            bracket=(0.02, 0.04),
+                            tol=1e-18,
+                            maxsteps=200,
+                            hp_dps=60):
+        """
+        Solve equation_fwd_price - fwd_price = 0 for yield y.
+
+        Attempts, in order:
+            1) Single good seed
+            2) Bracketed solve with given bracket
+            3) Auto-bracket with expanding range at higher precision
+            4) Multiple fallback seeds
+        """
+        y = Symbol('y')
+        expr = sympify(equation_fwd_price) - sympify(fwd_price)
+
+        # 1) Single-seed attempt
+        try:
+            return float(nsolve(expr, y, seed, tol=tol, maxsteps=maxsteps))
+        except Exception:
+            pass
+
+        # 2) Bracketed attempt (if provided)
+        if bracket is not None:
+            try:
+                return float(nsolve(expr, y, bracket, tol=tol, maxsteps=maxsteps))
+            except Exception:
+                pass
+
+        # 3) Auto-bracket with higher precision
+        try:
+            f = lambdify(y, expr, 'mpmath')
+            mpmath.mp.dps = hp_dps
+
+            a, b = 0.0, 0.10
+            fa, fb = f(a), f(b)
+            expands = 0
+            # Expand upper bound until sign change or limit
+            while fa * fb > 0 and expands < 30:
+                b += 0.10
+                fb = f(b)
+                expands += 1
+
+            if fa == 0:
+                return float(a)
+            if fb == 0:
+                return float(b)
+            if fa * fb <= 0:
+                return float(nsolve(expr, y, (a, b), tol=tol, maxsteps=maxsteps))
+        except Exception:
+            pass
+
+        # 4) Multiple fallback seeds
+        for s in (0.005, 0.01, 0.02, 0.03, 0.05, 0.08, 0.12):
+            try:
+                return float(nsolve(expr, y, s, tol=tol, maxsteps=maxsteps))
+            except Exception:
+                continue
+
+        raise ValueError("Failed to solve for forward yield")
