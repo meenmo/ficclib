@@ -10,17 +10,10 @@ import bisect
 import logging
 import math
 
+from ficclib.bond.utils.date import to_date as _to_date
+from ficclib.bond.utils.mathutils import linear_interpolate as _linear_interpolate
+
 logger = logging.getLogger(__name__)
-
-
-def _to_date(value: date | datetime | str) -> date:
-    if isinstance(value, date):
-        return value
-    if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, str):
-        return date.fromisoformat(value)
-    raise TypeError(f"Unsupported date-like value: {value!r}")
 
 
 def _normalize_nodes(nodes: Dict[float, float]) -> Dict[float, float]:
@@ -37,21 +30,6 @@ def _normalize_nodes(nodes: Dict[float, float]) -> Dict[float, float]:
     return dict(sorted(converted.items()))
 
 
-def _linear_interpolate(value: float, data: Dict[float, float]) -> float:
-    keys = sorted(data.keys())
-    if not keys:
-        raise ValueError("data must not be empty")
-    if value <= keys[0]:
-        return data[keys[0]]
-    if value >= keys[-1]:
-        return data[keys[-1]]
-    for idx in range(1, len(keys)):
-        x0, x1 = keys[idx - 1], keys[idx]
-        if x0 <= value <= x1:
-            y0, y1 = data[x0], data[x1]
-            weight = (value - x0) / (x1 - x0)
-            return y0 + weight * (y1 - y0)
-    return data[keys[-1]]
 
 
 def _interpolate_simple_zero_rate(

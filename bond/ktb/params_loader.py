@@ -1,8 +1,8 @@
 import pandas as pd
 
-from ficclib.entities import Basket, Bond
 from config.database import DatabaseEngine
-from ficclib.utils.date import to_date
+from ficclib.bond.utils.date import to_date
+from ficclib.bond.utils.entities import Basket, Bond
 
 
 class FuturesParams:
@@ -11,7 +11,7 @@ class FuturesParams:
         self.cd91 = self.load_cd91()
 
     def engine(self):
-        return DatabaseEngine.get_engine()
+        return DatabaseEngine.get_mysql_engine()
 
     def load_cd91(self):
         query = "SELECT `CD` FROM `단기금리` WHERE Date = %s"
@@ -56,8 +56,3 @@ class FuturesParams:
             )
 
         return basket
-
-
-if __name__ == "__main__":
-    today = "2024-08-22"
-    params = FuturesParams(today)

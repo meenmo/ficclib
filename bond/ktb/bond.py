@@ -4,8 +4,8 @@ from typing import List, Tuple, Union, Optional
 from dateutil.relativedelta import relativedelta
 import numpy as np
 
-from ficclib.utils.date import to_date
-from ficclib.ktb.curve_types import DiscountFactorNode
+from ficclib.bond.utils.date import to_date
+from ficclib.bond.ktb.curve_types import DiscountFactorNode
 
 DAYS_IN_YEAR = 365
 

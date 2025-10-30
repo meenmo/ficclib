@@ -6,8 +6,8 @@ import math
 from bisect import bisect_left
 from datetime import date
 
-from ficclib.ktb.bond import KTB
-from ficclib.ktb.curve_types import DiscountFactorNode
+from ficclib.bond.ktb.bond import KTB
+from ficclib.bond.ktb.curve_types import DiscountFactorNode
 from .utils import (
     build_df_zero_grid,  # not used here after refactor, but kept for API parity if needed
 )

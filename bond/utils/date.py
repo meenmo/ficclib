@@ -1,15 +1,16 @@
 from typing import Union, Tuple
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
-from config import kr_holidays
 from pandas import Timestamp
+
+try:
+    from config import kr_holidays
+except (ImportError, FileNotFoundError):
+    # Fallback if config is not available
+    kr_holidays = []
 
 DATE_FMT = "%Y-%m-%d"
 COMPACT_FMT = "%Y%m%d"
-
-
-def _normalize_midnight(dt: datetime) -> date:
-    return dt.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
 def to_date(date_like: Union[str, datetime]) -> date:

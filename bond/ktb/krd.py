@@ -11,20 +11,12 @@ import math
 
 from .analytics import _price_from_curve
 from .curve import ZeroCurve
-from utils.cashflows import Cashflow, accrued_interest, coupon_cashflows
-from utils.daycount import get_day_count
+from ficclib.bond.utils.cashflows import Cashflow, accrued_interest, coupon_cashflows
+from ficclib.bond.utils.daycount import get_day_count
+from ficclib.bond.utils.date import to_date as _to_date
+from ficclib.bond.utils.mathutils import linear_interpolate as _linear_interpolate
 
 logger = logging.getLogger(__name__)
-
-
-def _to_date(value: date | datetime | str) -> date:
-    if isinstance(value, date):
-        return value
-    if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, str):
-        return date.fromisoformat(value)
-    raise TypeError(f"Unsupported date-like value: {value!r}")
 
 
 def _pick(spec: Dict, keys: Iterable[str], default=None):
@@ -34,21 +26,6 @@ def _pick(spec: Dict, keys: Iterable[str], default=None):
     return default
 
 
-def _linear_interpolate(value: float, data: Dict[float, float]) -> float:
-    items = sorted((float(k), float(v)) for k, v in data.items())
-    if not items:
-        raise ValueError("data must not be empty for interpolation")
-    if value <= items[0][0]:
-        return items[0][1]
-    if value >= items[-1][0]:
-        return items[-1][1]
-    for idx in range(1, len(items)):
-        x0, y0 = items[idx - 1]
-        x1, y1 = items[idx]
-        if x0 <= value <= x1:
-            weight = (value - x0) / (x1 - x0)
-            return y0 + weight * (y1 - y0)
-    return items[-1][1]
 
 
 @dataclass(frozen=True)

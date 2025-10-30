@@ -136,8 +136,8 @@ $$
 
 ## 사용 예시
 ```python
-from ficclib.ktb.futures import KTB_Futures
-from ficclib.ktb.params_loader import FuturesParams
+from ficclib.bond.ktb.futures import KTB_Futures
+from ficclib.bond.ktb.params_loader import FuturesParams
 
 params = FuturesParams("2025-06-13")
 ktbf = KTB_Futures(params)

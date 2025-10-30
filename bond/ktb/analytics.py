@@ -7,9 +7,10 @@ from typing import Iterable, List, Tuple
 
 import logging
 
-from utils.cashflows import Cashflow, accrued_interest, coupon_cashflows
-from utils.daycount import get_day_count
-from utils.rootfinding import RootFindingError, newton_with_bisect
+from ficclib.bond.utils.cashflows import Cashflow, accrued_interest, coupon_cashflows
+from ficclib.bond.utils.daycount import get_day_count
+from ficclib.bond.utils.rootfinding import RootFindingError, newton_with_bisect
+from ficclib.bond.utils.date import to_date as _to_date
 
 logger = logging.getLogger(__name__)
 
@@ -23,16 +24,6 @@ def set_valuation_date(value: date | datetime | str | None) -> None:
         _VALUATION_DATE = None
     else:
         _VALUATION_DATE = _to_date(value)
-
-
-def _to_date(value: date | datetime | str) -> date:
-    if isinstance(value, date):
-        return value
-    if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, str):
-        return date.fromisoformat(value)
-    raise TypeError(f"Unsupported date-like value: {value!r}")
 
 
 def _resolve_settlement(issue: date, maturity: date) -> date:

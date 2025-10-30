@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Dict, Iterable, Tuple
 from datetime import date
 
-from ficclib.ktb.greeks import (
+from ficclib.bond.ktb.greeks import (
     krd_bond_via_bootstrap,
     ytm_by_price_newton_raphson,
     CurveNode,
@@ -21,7 +21,7 @@ def _price_from_par_curve(
 ) -> float:
     """Price using the same routine as KRD baseline (via greeks module)."""
     # Lazily import to avoid circulars
-    from ficclib.ktb.greeks import price_bond_by_par_curve
+    from ficclib.bond.ktb.greeks import price_bond_by_par_curve
 
     return float(
         price_bond_by_par_curve(

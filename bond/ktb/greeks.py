@@ -6,12 +6,12 @@ import numpy as np
 import pandas as pd
 from sympy import Symbol, nsolve
 
-from ficclib.ktb.bond import KTB, DAYS_IN_YEAR
-from ficclib.ktb.curve import (
+from ficclib.bond.ktb.bond import KTB, DAYS_IN_YEAR
+from ficclib.bond.ktb.curve import (
     build_halfyear_grid,
     nodes_to_time_arrays,
 )
-from ficclib.ktb.curve_types import CurveNode
+from ficclib.bond.ktb.curve_types import CurveNode
 
 
 @dataclass
@@ -237,7 +237,7 @@ def price_bond_by_par_curve(
     grid_tenors = build_halfyear_grid(curve_nodes, max_t=max_t)
 
     # Interpolate YTMs at grid points and convert to discount factors
-    from ficclib.ktb.curve_types import DiscountFactorNode
+    from ficclib.bond.ktb.curve_types import DiscountFactorNode
 
     # Create a simple interpolation function
     def interpolate_ytm(tenor):
@@ -276,7 +276,7 @@ def price_bond_by_par_curve(
         int(round(12 / coupons_per_year)),
     )
     # Convert arrays to DiscountFactorNode list
-    from ficclib.ktb.curve_types import DiscountFactorNode
+    from ficclib.bond.ktb.curve_types import DiscountFactorNode
 
     discount_nodes = []
     for i, t in enumerate(times):

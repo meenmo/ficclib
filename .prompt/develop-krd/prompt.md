@@ -5,11 +5,15 @@
 
 ## Scope & Non-negotiables
 
-* Work **only** inside: `ktb/` and `utils/`.
-* **Do not modify** `ktb/futures.py` (freeze it; treat as read-only).
+* Work **only** inside: `bond/ktb/` and `utils/`.
+* **Do not modify** `bond/ktb/futures.py` (freeze it; treat as read-only).
 * Create/run all debug runners in **`.debug/`**.
-* Sample data lives at `.prompt/develop-ktb/sample_data.py`. **Import** it in debug/tests; **do not embed** it in library modules.
+* Sample data lives at `test/test_data.py`. **Import** it in debug/tests; **do not embed** it in library modules.
 * In this project, **KTB prices are quoted as DIRTY prices** (i.e., include accrued interest). Provide helpers to get clean if needed.
+* CWD: `/Users/meenmo/Documents/workspace/`
+* PYTHON EXECUTABLE TO USE: `/Users/meenmo/Documents/workspace/ficclib/.venv/bin/python`
+* The existing working module, `ficclib/.venv/bin/python -m ficclib.bond.ktb.futures`, must pass.
+* Write sample execution files under `/Users/meenmo/Documents/workspace/test/`: Work on `ytm.py` (verify whether calculated YTM matches the target YTM), `price.py` (verify whether calculated price matches the target price), and `krd.py` (verify whether calculated KRD matches the target KRD) respectively to test each function given `test_data.py`.
 
 ## Objectives
 
@@ -19,7 +23,7 @@
 
 ## Refactor Mandate (aggressive, but safe)
 
-Refactor as much existing code as possible **without changing public behavior** (except where clarified here), and **without touching `ktb/futures.py`**:
+Refactor as much existing code as possible **without changing public behavior** (except where clarified here), and **without touching `bond/ktb/futures.py`**:
 
 * Eliminate dead/duplicated code; collapse helpers into `utils/`.
 * Replace implicit globals with explicit parameters; add **type hints** and **docstrings**.
@@ -31,7 +35,7 @@ Refactor as much existing code as possible **without changing public behavior** 
 ## Target Package Layout
 
 ```
-ktb/
+bond/ktb/
   __init__.py
   analytics.py        # price_from_ytm, ytm_from_price (DIRTY by default)
   curve.py            # ZeroCurve: zero(t), df(t), clone_with_shifted_node(...)
@@ -49,7 +53,7 @@ utils/
 ## Public API (keep stable)
 
 ```python
-# ktb/analytics.py
+# bond/ktb/analytics.py
 def price_from_ytm(issue_date, maturity_date, coupon, payment_frequency,
                    ytm, face=10_000, day_count="ACT/365F", as_clean=False) -> float: ...
 
@@ -57,14 +61,14 @@ def ytm_from_price(issue_date, maturity_date, coupon, payment_frequency,
                    price_dirty, face=10_000, day_count="ACT/365F",
                    guess: float | None = None) -> float: ...
 
-# ktb/curve.py
+# bond/ktb/curve.py
 class ZeroCurve:
     def __init__(self, curve_date, nodes: dict[float, float], comp: str = "cont"): ...
     def zero(self, t: float) -> float: ...
     def df(self, t: float) -> float: ...
     def clone_with_shifted_node(self, tenor: float, shift_bp: float) -> "ZeroCurve": ...
 
-# ktb/krd.py
+# bond/ktb/krd.py
 def key_rate_delta(bond_spec: dict, curve: ZeroCurve, key_tenor_years: float,
                    as_clean=True) -> float: ...
 def batch_key_rate_delta(bonds: list[dict], curve: ZeroCurve,
@@ -151,16 +155,16 @@ Use **curve-discounting** (not YTM) to reflect the node move.
 
 ### Phase 1 — Survey & Refactor (no features yet)
 
-1. **Read-only scan** of `ktb/` and `utils/`; identify:
+1. **Read-only scan** of `bond/ktb/` and `utils/`; identify:
 
    * duplicate helpers, hidden state, untyped functions, unreachable code.
-2. **Do not edit** `ktb/futures.py`—add it to a local “do-not-touch” list.
+2. **Do not edit** `bond/ktb/futures.py`—add it to a local “do-not-touch” list.
 3. Consolidate utilities into `utils/`:
 
    * `daycount.py` (ACT/365F), `schedule.py`, `cashflows.py`, `rootfinding.py`.
 4. Normalize **units** (all rates in decimals internally).
 5. Add type hints, docstrings (with the formulas above), and lightweight input validation.
-6. Keep public symbols stable; if renaming internals, update imports within `ktb/`.
+6. Keep public symbols stable; if renaming internals, update imports within `bond/ktb/`.
 
 ### Phase 2 — Curve engine
 
@@ -199,7 +203,7 @@ Use **curve-discounting** (not YTM) to reflect the node move.
 ### Phase 6 — Hygiene
 
 15. Add lightweight logging (DEBUG in `.debug/`, silent by default in lib).
-16. Ensure **no diffs in `ktb/futures.py`**. (Locally: `git update-index --assume-unchanged ktb/futures.py` if helpful.)
+16. Ensure **no diffs in `bond/ktb/futures.py`**. (Locally: `git update-index --assume-unchanged bond/ktb/futures.py` if helpful.)
 17. Ruff/PEP8 clean; keep functions cohesive; document corner cases (coupon date, short accruals).
 
 ## Runbook (local)
