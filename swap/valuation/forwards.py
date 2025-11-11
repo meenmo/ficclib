@@ -1,7 +1,7 @@
 """Forward rate calculation for different leg types.
 
-This module calculates forward rates for both EURIBOR (simple, in advance)
-and ESTR (compounded, in arrears) legs using the appropriate projection curves.
+This module calculates forward rates for both IBOR (simple, in advance)
+and OIS/RFR (compounded, in arrears) legs using the appropriate projection curves.
 """
 
 from datetime import date
@@ -25,8 +25,8 @@ def calculate_forward_rate(
 ) -> float:
     """Calculate forward rate for a payment period.
 
-    This function handles both EURIBOR (simple forward, reset in advance)
-    and ESTR (compounded in arrears with rate cutoff) conventions.
+    This function handles both IBOR (simple forward, reset in advance)
+    and OIS/RFR (compounded in arrears with rate cutoff) conventions.
 
     Args:
         period: Payment period with accrual dates
@@ -44,7 +44,7 @@ def calculate_forward_rate(
     Examples:
         >>> forward_rate = calculate_forward_rate(
         ...     period=period,
-        ...     convention=EURIBOR_6M_FLOATING,
+        ...     convention=TIBOR6M_FLOATING,
         ...     curves=curve_set,
         ...     valuation_date=date(2025, 1, 15)
         ... )
@@ -61,12 +61,15 @@ def calculate_forward_rate(
     projection_curve = _get_projection_curve(convention, curves)
 
     # Calculate forward rate based on reference rate type
-    if convention.reference_rate == RefereceRate.ESTR:
+    # OIS/RFR rates use compounded in arrears calculation
+    if convention.reference_rate in (RefereceRate.ESTR, RefereceRate.TONAR,
+                                      RefereceRate.SOFR, RefereceRate.SONIA,
+                                      RefereceRate.KOFR):
         return _calculate_estr_forward(
             period, convention, projection_curve, valuation_date
         )
 
-    # EURIBOR 3M or 6M
+    # IBOR rates (EURIBOR, TIBOR, etc.) use simple forward calculation
     return _calculate_euribor_forward(
         period, convention, projection_curve, valuation_date
     )
@@ -79,7 +82,7 @@ def _calculate_simple_forward(
 ) -> float:
     """Calculate simple forward rate from discount factors.
 
-    This is the common calculation used for both EURIBOR and ESTR (approximation).
+    This is the common calculation used for both IBOR and OIS/RFR rates (approximation).
 
     Formula: F = (DF(start) / DF(end) - 1) / alpha
 
@@ -114,19 +117,19 @@ def _calculate_euribor_forward(
     projection_curve: IborProjectionCurve,
     valuation_date: date,
 ) -> float:
-    """Calculate EURIBOR forward rate (simple, reset in advance).
+    """Calculate IBOR forward rate (simple, reset in advance).
 
-    EURIBOR legs use simple interest with reset at the beginning of the accrual period.
-    The day count is typically ACT/360.
+    IBOR legs (e.g., EURIBOR, TIBOR) use simple interest with reset at the beginning
+    of the accrual period. The day count is typically ACT/360.
 
     Args:
         period: Payment period
-        convention: Leg convention (should specify EURIBOR rate and ACT/360)
-        projection_curve: IBOR projection curve (EURIBOR 3M or 6M)
+        convention: Leg convention (should specify IBOR rate and day count)
+        projection_curve: IBOR projection curve (e.g., EURIBOR 3M/6M, TIBOR 3M/6M)
         valuation_date: Valuation date
 
     Returns:
-        EURIBOR forward rate as decimal
+        IBOR forward rate as decimal
     """
     # For the first period, end date may shift by BDA (e.g., +1 day vs deposit tenor).
     # To better align with market practice, use the tenor end date when computing

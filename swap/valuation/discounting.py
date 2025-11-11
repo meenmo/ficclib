@@ -43,7 +43,7 @@ def get_discount_factor(
         ...     payment_date=date(2026, 1, 15),
         ...     curves=curve_set,
         ...     discounting="OIS",
-        ...     leg_convention=EURIBOR_6M_FLOATING,
+        ...     leg_convention=EURIBOR6M_FLOATING,
         ...     valuation_date=date(2025, 1, 15)
         ... )
     """
@@ -89,26 +89,32 @@ def _get_projection_curve(
     """
     ref_rate = convention.reference_rate
 
-    if ref_rate == RefereceRate.ESTR:
+    # OIS/risk-free rates
+    if ref_rate in (RefereceRate.ESTR, RefereceRate.TONAR, RefereceRate.SOFR,
+                    RefereceRate.SONIA, RefereceRate.KOFR):
         return curves.ois_curve
 
-    if ref_rate == RefereceRate.EURIBOR3M:
-        if curves.euribor3m_curve is None:
+    # 3M IBOR rates
+    if ref_rate in (RefereceRate.EURIBOR3M, RefereceRate.TIBOR3M):
+        if curves.ibor3m_curve is None:
             raise ValueError(
-                "EURIBOR 3M curve not available in curve set. "
-                "Provide euribor3m_curve when creating CurveSet."
+                f"{ref_rate.value} curve not available in curve set. "
+                "Provide ibor3m_curve when creating CurveSet."
             )
-        return curves.euribor3m_curve
+        return curves.ibor3m_curve
 
-    if ref_rate == RefereceRate.EURIBOR6M:
-        if curves.euribor6m_curve is None:
+    # 6M IBOR rates
+    if ref_rate in (RefereceRate.EURIBOR6M, RefereceRate.TIBOR6M):
+        if curves.ibor6m_curve is None:
             raise ValueError(
-                "EURIBOR 6M curve not available in curve set. "
-                "Provide euribor6m_curve when creating CurveSet."
+                f"{ref_rate.value} curve not available in curve set. "
+                "Provide ibor6m_curve when creating CurveSet."
             )
-        return curves.euribor6m_curve
+        return curves.ibor6m_curve
 
     raise ValueError(
         f"Unsupported reference rate: {ref_rate}. "
-        f"Supported rates: ESTR, EURIBOR3M, EURIBOR6M"
+        f"Supported OIS rates: ESTR, TONAR, SOFR, SONIA, KOFR. "
+        f"Supported 3M rates: EURIBOR3M, TIBOR3M. "
+        f"Supported 6M rates: EURIBOR6M, TIBOR6M."
     )

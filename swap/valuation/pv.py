@@ -117,7 +117,7 @@ def price_leg(
         >>> # Price a floating leg
         >>> leg_pv = price_leg(
         ...     spec=swap_spec,
-        ...     leg_convention=EURIBOR_6M_FLOATING,
+        ...     leg_convention=EURIBOR6M_FLOATING,
         ...     curves=curve_set,
         ...     valuation_date=date(2025, 8, 8),
         ...     direction="PAY",
