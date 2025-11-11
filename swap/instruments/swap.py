@@ -75,7 +75,7 @@ class SwapLeg:
 
 
 # Predefined floating leg specs
-EURIBOR_3M_FLOATING = SwapLegConvention(
+EURIBOR3M_FLOATING = SwapLegConvention(
     leg_type=LegType.FLOATING,
     reference_rate=RefereceRate.EURIBOR3M,
     day_count=ACT_360,
@@ -89,7 +89,7 @@ EURIBOR_3M_FLOATING = SwapLegConvention(
     reset_position=ResetPosition.IN_ADVANCE,
 )
 
-EURIBOR_6M_FLOATING = SwapLegConvention(
+EURIBOR6M_FLOATING = SwapLegConvention(
     leg_type=LegType.FLOATING,
     reference_rate=RefereceRate.EURIBOR6M,
     day_count=ACT_360,
@@ -143,4 +143,60 @@ EUR_IRS_FIXED = SwapLegConvention(
     calendar=CalendarType.TARGET,
     reset_position=None,  # Not applicable for fixed legs
     reference_rate=None,  # Fixed legs don't reference a rate
+)
+
+TIBOR3M_FLOATING = SwapLegConvention(
+    leg_type=LegType.FLOATING,
+    reference_rate=RefereceRate.TIBOR3M,
+    day_count=ACT_365F, 
+    reset_frequency=Frequency.QUARTERLY,
+    pay_frequency=Frequency.QUARTERLY,
+    fixing_lag_days=2,
+    pay_delay_days=0,
+    business_day_adjustment=BusinessDayAdjustment.MODIFIED_FOLLOWING,
+    roll_convention=RollConvention.BACKWARD_EOM,
+    calendar=CalendarType.JN,
+    reset_position=ResetPosition.IN_ADVANCE,
+)
+
+TIBOR6M_FLOATING = SwapLegConvention(
+    leg_type=LegType.FLOATING,
+    reference_rate=RefereceRate.TIBOR6M,
+    day_count=ACT_365F,
+    reset_frequency=Frequency.SEMIANNUAL,
+    pay_frequency=Frequency.SEMIANNUAL,
+    fixing_lag_days=2,
+    pay_delay_days=0,
+    business_day_adjustment=BusinessDayAdjustment.MODIFIED_FOLLOWING,
+    calendar=CalendarType.JN,
+    reset_position=ResetPosition.IN_ADVANCE,
+    roll_convention=RollConvention.BACKWARD_EOM,
+)
+
+TONAR_FLOATING = SwapLegConvention(
+    leg_type=LegType.FLOATING,
+    reference_rate=RefereceRate.TONAR,
+    day_count=ACT_365F,
+    reset_frequency=Frequency.DAILY,
+    pay_frequency=Frequency.ANNUAL,
+    fixing_lag_days=0,
+    rate_cutoff_days=1,
+    pay_delay_days=2,
+    business_day_adjustment=BusinessDayAdjustment.MODIFIED_FOLLOWING,
+    calendar=CalendarType.JN,
+    reset_position=ResetPosition.IN_ARREARS,
+    roll_convention=RollConvention.BACKWARD_EOM,
+)
+
+TONAR_FIXED = SwapLegConvention(
+    leg_type=LegType.FIXED,
+    reference_rate=RefereceRate.TONAR,
+    day_count=ACT_365F,
+    reset_frequency=None,  # Not applicable for fixed legs
+    pay_frequency=Frequency.ANNUAL,
+    fixing_lag_days=0,
+    pay_delay_days=2,
+    business_day_adjustment=BusinessDayAdjustment.MODIFIED_FOLLOWING,
+    calendar=CalendarType.JN,
+    roll_convention=RollConvention.BACKWARD_EOM,
 )
