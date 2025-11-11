@@ -1,0 +1,93 @@
+from datetime import date
+
+CURVE_DATE = date(2025, 11, 10)
+
+OIS_QUOTES = [
+    {"rate": 0.47863, "tenor": "1W"},
+    {"rate": 0.478655, "tenor": "2W"},
+    {"rate": 0.478, "tenor": "1M"},
+    {"rate": 0.526925, "tenor": "2M"},
+    {"rate": 0.57, "tenor": "3M"},
+    {"rate": 0.596105, "tenor": "4M"},
+    {"rate": 0.621085, "tenor": "5M"},
+    {"rate": 0.641, "tenor": "6M"},
+    {"rate": 0.658405, "tenor": "7M"},
+    {"rate": 0.679295, "tenor": "8M"},
+    {"rate": 0.697095, "tenor": "9M"},
+    {"rate": 0.717, "tenor": "10M"},
+    {"rate": 0.73482, "tenor": "11M"},
+    {"rate": 0.75125, "tenor": "1Y"},
+    {"rate": 0.79875, "tenor": "15M"},
+    {"rate": 0.845025, "tenor": "18M"},
+    {"rate": 0.88875, "tenor": "21M"},
+    {"rate": 0.923745, "tenor": "2Y"},
+    {"rate": 1.03875, "tenor": "3Y"},
+    {"rate": 1.12, "tenor": "4Y"},
+    {"rate": 1.186, "tenor": "5Y"},
+    {"rate": 1.247, "tenor": "6Y"},
+    {"rate": 1.31, "tenor": "7Y"},
+    {"rate": 1.37375, "tenor": "8Y"},
+    {"rate": 1.44, "tenor": "9Y"},
+    {"rate": 1.50875, "tenor": "10Y"},
+    {"rate": 1.57875, "tenor": "11Y"},
+    {"rate": 1.652, "tenor": "12Y"},
+    {"rate": 1.86875, "tenor": "15Y"},
+    {"rate": 2.17875, "tenor": "20Y"},
+    {"rate": 2.38, "tenor": "25Y"},
+    {"rate": 2.5, "tenor": "30Y"},
+    {"rate": 2.56875, "tenor": "35Y"},
+    {"rate": 2.625, "tenor": "40Y"},
+
+]
+
+IBOR3M_QUOTES = [
+    {"rate": 0.80909, "tenor": "3M"},
+    {"rate": 1.02500, "tenor": "1Y"},
+    {"rate": 1.13125, "tenor": "18M"},
+    {"rate": 1.22000, "tenor": "2Y"},
+    {"rate": 1.35750, "tenor": "3Y"},
+    {"rate": 1.46250, "tenor": "4Y"},
+    {"rate": 1.54750, "tenor": "5Y"},
+    {"rate": 1.62250, "tenor": "6Y"},
+    {"rate": 1.69625, "tenor": "7Y"},
+    {"rate": 1.77125, "tenor": "8Y"},
+    {"rate": 1.84600, "tenor": "9Y"},
+    {"rate": 1.92250, "tenor": "10Y"},
+    {"rate": 2.07750, "tenor": "12Y"},
+    {"rate": 2.29500, "tenor": "15Y"},
+    {"rate": 2.61200, "tenor": "20Y"},
+    {"rate": 2.81500, "tenor": "25Y"},
+    {"rate": 2.93700, "tenor": "30Y"},
+    {"rate": 3.01000, "tenor": "35Y"},
+    {"rate": 3.05875, "tenor": "40Y"},
+]
+
+IBOR6M_QUOTES = [
+    {"rate": 0.88091, "tenor": "6M"},
+    {"rate": 1.01625, "tenor": "1Y"},
+    {"rate": 1.11875, "tenor": "18M"},
+    {"rate": 1.20250, "tenor": "2Y"},
+    {"rate": 1.33250, "tenor": "3Y"},
+    {"rate": 1.43250, "tenor": "4Y"},
+    {"rate": 1.51625, "tenor": "5Y"},
+    {"rate": 1.59375, "tenor": "6Y"},
+    {"rate": 1.67250, "tenor": "7Y"},
+    {"rate": 1.75250, "tenor": "8Y"},
+    {"rate": 1.83225, "tenor": "9Y"},
+    {"rate": 1.91000, "tenor": "10Y"},
+    {"rate": 2.07000, "tenor": "12Y"},
+    {"rate": 2.29875, "tenor": "15Y"},
+    {"rate": 2.63075, "tenor": "20Y"},
+    {"rate": 2.83375, "tenor": "25Y"},
+    {"rate": 2.95450, "tenor": "30Y"},
+    {"rate": 3.02750, "tenor": "35Y"},
+    {"rate": 3.07625, "tenor": "40Y"},
+]
+
+__all__ = [
+    "CURVE_DATE",
+    "OIS_QUOTES",
+    "IBOR3M_QUOTES",
+    "IBOR6M_QUOTES",
+]
+
