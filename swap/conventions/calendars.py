@@ -94,7 +94,7 @@ class Calendar:
         return count
 
 
-class TargetCalendar(Calendar):
+class Target(Calendar):
     """TARGET (Trans-European Automated Real-time Gross settlement Express Transfer) calendar.
 
     Uses QuantLib's built-in TARGET calendar implementation.
@@ -113,6 +113,25 @@ class TargetCalendar(Calendar):
         """
         super().__init__("TARGET", ql.TARGET())
 
+class Japan(Calendar):
+    """Japan (JN) calendar.
+
+    Uses QuantLib's built-in Japan calendar implementation.
+    """
+
+    def __init__(self, holidays_file_path: str = None, target_holidays=None):
+        """
+        Initialize Japan calendar.
+
+        Args:
+            holidays_file_path: Ignored (for API compatibility)
+            target_holidays: Ignored (for API compatibility)
+
+        Note: QuantLib maintains the official Japan calendar internally.
+        Custom holidays are not supported in this version.
+        """
+        super().__init__("JAPAN", ql.Japan())
+
 
 class WeekendCalendar(Calendar):
     """Simple calendar that only considers weekends as non-business days."""
@@ -123,7 +142,7 @@ class WeekendCalendar(Calendar):
 
 
 # Pre-defined calendar instances
-TARGET = TargetCalendar()
+TARGET = Target()
 WEEKEND_ONLY = WeekendCalendar()
 
 # Calendar registry
@@ -131,6 +150,8 @@ CALENDARS = {
     "TARGET": TARGET,
     "WEEKEND": WEEKEND_ONLY,
     "EUR": TARGET,  # Alias
+    "JN": Japan(),
+    "JAPAN": Japan(),
 }
 
 
