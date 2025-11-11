@@ -69,7 +69,7 @@ def build_schedule(
         >>> periods = build_schedule(
         ...     effective_date=date(2025, 8, 12),
         ...     maturity_date=date(2030, 8, 12),
-        ...     convention=EURIBOR_6M_FLOATING
+        ...     convention=EURIBOR6M_FLOATING
         ... )
         >>> print(f"Number of periods: {len(periods)}")
         >>> print(f"First payment: {periods[0].payment_date}")

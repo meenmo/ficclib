@@ -48,6 +48,7 @@ class CalendarType(Enum):
     TARGET = "TARGET"
     USNY = "USNY"
     UK = "UK"
+    JN = "JN"
 
 class RefereceRate(Enum):
     """Reference rate types."""
@@ -57,8 +58,9 @@ class RefereceRate(Enum):
     ESTR = "ESTR"
     SOFR = "SOFR"
     SONIA = "SONIA"
-    SORA = "SORA"
-    TONA = "TONA"
+    TIBOR3M = "TIBOR3M"
+    TIBOR6M = "TIBOR6M"
+    TONAR = "TONAR"
     KOFR = "KOFR"
     HIBOR = "HIBOR"
     SHIBOR = "SHIBOR"

@@ -5,7 +5,7 @@ EURIBOR deposit instrument specifications and conventions.
 from dataclasses import dataclass, field
 
 from ficclib.swap.conventions.calendars import Calendar, get_calendar
-from ficclib.swap.conventions.daycount import ACT_360, DayCountConvention
+from ficclib.swap.conventions.daycount import ACT_360, ACT_365F, DayCountConvention
 from ficclib.swap.conventions.types import (
     BusinessDayAdjustment,
     CalendarType,
@@ -33,15 +33,7 @@ class DepositConvention:
         """Get the actual calendar object."""
         return self._calendar_obj
 
-ESTR_DEPOSIT = DepositConvention(
-    reference_rate=RefereceRate.ESTR,
-    day_count=ACT_360,
-    settlement_lag_days=1,  # T+1 for overnight deposits
-    business_day_adjustment=BusinessDayAdjustment.MODIFIED_FOLLOWING,
-    calendar=CalendarType.TARGET,
-)
-
-EURIBOR_3M_DEPOSIT = DepositConvention(
+EURIBOR3M_DEPOSIT = DepositConvention(
     reference_rate=RefereceRate.EURIBOR3M,
     day_count=ACT_360,
     settlement_lag_days=2,
@@ -49,10 +41,26 @@ EURIBOR_3M_DEPOSIT = DepositConvention(
     calendar=CalendarType.TARGET,
 )
 
-EURIBOR_6M_DEPOSIT = DepositConvention(
+EURIBOR6M_DEPOSIT = DepositConvention(
     reference_rate=RefereceRate.EURIBOR6M,
     day_count=ACT_360,
     settlement_lag_days=2,
     business_day_adjustment=BusinessDayAdjustment.MODIFIED_FOLLOWING,
     calendar=CalendarType.TARGET,
+)
+
+TIBOR3M_DEPOSIT = DepositConvention(
+    reference_rate=RefereceRate.TIBOR3M,
+    day_count=ACT_365F,
+    settlement_lag_days=2,
+    business_day_adjustment=BusinessDayAdjustment.MODIFIED_FOLLOWING,
+    calendar=CalendarType.JN,
+)
+
+TIBOR6M_DEPOSIT = DepositConvention(
+    reference_rate=RefereceRate.TIBOR6M,
+    day_count=ACT_365F,
+    settlement_lag_days=2,
+    business_day_adjustment=BusinessDayAdjustment.MODIFIED_FOLLOWING,
+    calendar=CalendarType.JN,
 )

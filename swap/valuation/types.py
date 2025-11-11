@@ -24,13 +24,13 @@ class CurveSet:
 
     Attributes:
         ois_curve: OIS discount curve (ESTR for EUR)
-        euribor3m_curve: EURIBOR 3M projection curve (optional)
-        euribor6m_curve: EURIBOR 6M projection curve (optional)
+        ibor3m_curve: EURIBOR 3M projection curve (optional)
+        ibor6m_curve: EURIBOR 6M projection curve (optional)
     """
 
     ois_curve: OISDiscountCurve
-    euribor3m_curve: IborProjectionCurve | None = None
-    euribor6m_curve: IborProjectionCurve | None = None
+    ibor3m_curve: IborProjectionCurve | None = None
+    ibor6m_curve: IborProjectionCurve | None = None
 
 
 @dataclass
