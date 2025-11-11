@@ -24,25 +24,25 @@ from ficclib.swap.conventions.types import RollConvention
 from ficclib.swap.curves.ibor import IborCurveBuilder
 from ficclib.swap.curves.ois import OISBootstrapper, OISQuote
 from ficclib.swap.instruments.deposit import (
-    EURIBOR_3M_DEPOSIT,
-    EURIBOR_6M_DEPOSIT,
+    EURIBOR3M_DEPOSIT,
+    EURIBOR6M_DEPOSIT,
 )
 from ficclib.swap.instruments.swap import (
     ESTR_FIXED,
     ESTR_FLOATING,
-    EURIBOR_3M_FLOATING,
-    EURIBOR_6M_FLOATING,
+    EURIBOR3M_FLOATING,
+    EURIBOR6M_FLOATING,
 )
 from ficclib.swap.schema.quotes import Quote
-from ficclib.swap.test.input_curves import (
+from ficclib.swap.test.input_curves_eur import (
     CURVE_DATE,
-    ESTR_QUOTES,
-    EURIBOR3M_QUOTES,
-    EURIBOR6M_QUOTES,
+    OIS_QUOTES,
+    IBOR3M_QUOTES,
+    IBOR6M_QUOTES,
 )
 
 
-def prepare_ois_quotes(curve_date: date, estr_quotes: list):
+def prepare_ois_quotes(curve_date: date, OIS_QUOTES: list):
     """Prepare OIS quotes for bootstrapper."""
     calendar = ESTR_FLOATING.calendar_obj
     spot_lag = 2
@@ -50,7 +50,7 @@ def prepare_ois_quotes(curve_date: date, estr_quotes: list):
     end_of_month_rule = (ESTR_FLOATING.roll_convention == RollConvention.BACKWARD_EOM)
 
     ois_quote_objects = []
-    for q in estr_quotes:
+    for q in OIS_QUOTES:
         if q["rate"] is None:
             continue
 
@@ -181,7 +181,7 @@ def main():
     curve_date = CURVE_DATE
 
     # OIS bootstrap
-    ois_quotes = prepare_ois_quotes(curve_date, ESTR_QUOTES)
+    ois_quotes = prepare_ois_quotes(curve_date, OIS_QUOTES)
     bootstrapper = OISBootstrapper(curve_date)
     ois_curve = bootstrapper.bootstrap(
         ois_quotes,
@@ -192,8 +192,8 @@ def main():
     display_ois_results(curve_date, ois_curve, ois_quotes)
 
     # IBOR bootstrap (uses the same OIS input quotes)
-    ibor_quotes_3m = prepare_ibor_quotes(EURIBOR3M_QUOTES, EURIBOR_3M_FLOATING, EURIBOR_3M_DEPOSIT, "3M")
-    ibor_quotes_6m = prepare_ibor_quotes(EURIBOR6M_QUOTES, EURIBOR_6M_FLOATING, EURIBOR_6M_DEPOSIT, "6M")
+    ibor_quotes_3m = prepare_ibor_quotes(IBOR3M_QUOTES, EURIBOR3M_FLOATING, EURIBOR3M_DEPOSIT, "3M")
+    ibor_quotes_6m = prepare_ibor_quotes(IBOR6M_QUOTES, EURIBOR6M_FLOATING, EURIBOR6M_DEPOSIT, "6M")
     build_3m, build_6m = build_ibor_curves(curve_date, ois_quotes, ibor_quotes_3m, ibor_quotes_6m)
     display_ibor_results(curve_date, build_3m, build_6m)
 

@@ -433,14 +433,14 @@ from datetime import date
 from ficclib.swap.valuation.schedule import build_schedule
 from ficclib.swap.conventions.daycount import get_day_count_convention
 from ficclib.swap.conventions.types import Frequency, StubType
-from ficclib.swap.instruments.swap import EURIBOR_6M_FLOATING
+from ficclib.swap.instruments.swap import EURIBOR6M_FLOATING
 
 # Build schedule using convention
 schedule = build_schedule(
 
     effective_date=date(2025, 8, 12),
     maturity_date=date(2026, 8, 12),
-    convention=EURIBOR_6M_FLOATING,
+    convention=EURIBOR6M_FLOATING,
 )
 
 # Print periods
@@ -455,9 +455,9 @@ for i, period in enumerate(schedule):
 ### Example 4: All Conventions for EURIBOR 6M Swap
 
 ```python
-from ficclib.swap.instruments.swap import EURIBOR_6M_FLOATING
+from ficclib.swap.instruments.swap import EURIBOR6M_FLOATING
 
-conv = EURIBOR_6M_FLOATING
+conv = EURIBOR6M_FLOATING
 
 print(f"Day count: {conv.day_count}")                        # ACT/360
 print(f"Calendar: {conv.calendar}")                          # TARGET
