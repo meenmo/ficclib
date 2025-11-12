@@ -107,7 +107,7 @@ class PostgreSQLDataSource(BaseDataSource):
     def load_ois_quotes(
         self,
         curve_date: date,
-        reference_index: str = "ESTR",
+        reference_index: str,
         source: str = "BGN",
     ) -> List[Quote]:
         """
@@ -243,7 +243,7 @@ class JSONDataSource(BaseDataSource):
     def load_ois_quotes(
         self,
         curve_date: date,
-        reference_index: str = "ESTR",
+        reference_index: str,
         source: str = "BGN",
     ) -> List[Quote]:
         """
@@ -259,7 +259,7 @@ class JSONDataSource(BaseDataSource):
         """
         from ficclib.swap.instruments.swap import ESTR_FLOATING
 
-        filepath = self._get_quote_file(curve_date, "OIS", reference_index)
+        filepath = self._get_quote_file(curve_date, "OIS", reference_index, source)
         data = self._load_json_file(filepath)
 
         quotes = [
