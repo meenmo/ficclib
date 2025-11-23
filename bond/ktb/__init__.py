@@ -1,10 +1,12 @@
 """KTB analytics public API."""
 
+from .bond import KTB
 from .analytics import price_from_ytm, ytm_from_price
 from .curve import ZeroCurve
 from .krd import batch_key_rate_delta, key_rate_delta
 
 __all__ = [
+    "KTB",
     "ZeroCurve",
     "price_from_ytm",
     "ytm_from_price",

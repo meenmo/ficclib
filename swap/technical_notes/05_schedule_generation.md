@@ -572,19 +572,19 @@ class ScheduleGenerator:
 
 ```python
 from engine.schedule import ScheduleGenerator
-from engine.instruments.swap import EURIBOR6M_FLOATING
+from engine.instruments.swap import EURIBOR_6M_FLOATING
 from engine.conventions.types import Frequency, StubType
 from datetime import date
 
 # EURIBOR 6M floating leg convention
-generator = ScheduleGenerator(EURIBOR6M_FLOATING)
+generator = ScheduleGenerator(EURIBOR_6M_FLOATING)
 
 # Generate semi-annual schedule
 schedule = generator.generate_schedule(
     effective_date=date(2025, 8, 12),  # Spot date
     maturity_date=date(2030, 8, 12),   # 5Y exactly
     frequency=Frequency.SEMIANNUAL,
-    day_count=EURIBOR6M_FLOATING.day_count,  # ACT/360
+    day_count=EURIBOR_6M_FLOATING.day_count,  # ACT/360
     stub_type=StubType.NO_STUB,  # 5Y / 6M = exact fit
 )
 

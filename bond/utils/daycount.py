@@ -25,7 +25,32 @@ def _act_365f(start: date, end: date) -> float:
     return float(days) / 365.0
 
 
-_REGISTRY: Dict[str, DayCountFunc] = {"ACT/365F": _act_365f}
+def _is_leap(year: int) -> bool:
+    return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+
+
+def _act_act(start: date, end: date) -> float:
+    """Return the ACT/ACT (ISDA-style) year fraction."""
+    if end < start:
+        logger.debug("Swapping start/end for ACT/ACT: %s, %s", start, end)
+        start, end = end, start
+    current = start
+    frac = 0.0
+    while current < end:
+        year = current.year
+        year_end = date(year + 1, 1, 1)
+        period_end = min(year_end, end)
+        days = (period_end - current).days
+        year_length = 366 if _is_leap(year) else 365
+        frac += float(days) / year_length
+        current = period_end
+    return frac
+
+
+_REGISTRY: Dict[str, DayCountFunc] = {
+    "ACT/365F": _act_365f,
+    "ACT/ACT": _act_act,
+}
 
 
 def get_day_count(name: str) -> DayCountFunc:

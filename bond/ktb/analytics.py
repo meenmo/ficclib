@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Iterable, List, Tuple
+from typing import Callable, Iterable, List, Tuple
 
 import logging
+import math
 
 from ficclib.bond.utils.cashflows import Cashflow, accrued_interest, coupon_cashflows
 from ficclib.bond.utils.daycount import get_day_count
@@ -64,6 +65,27 @@ def _cashflows(
     )
 
 
+def _price_from_curve(
+    flows: Iterable[Cashflow],
+    *,
+    settlement_date: date | datetime | str,
+    discount_factor: Callable[[float], float],
+    day_count: str,
+    as_clean: bool,
+    accrued: float = 0.0,
+) -> float:
+    """Discount future flows using an externally supplied discount function."""
+    settlement = _to_date(settlement_date)
+    dc_func = get_day_count(day_count)
+    dirty = 0.0
+    for dt, amount in flows:
+        if dt <= settlement:
+            continue
+        t = dc_func(settlement, dt)
+        dirty += amount * discount_factor(t)
+    return dirty - accrued if as_clean else dirty
+
+
 def price_from_ytm(
     issue_date: date | datetime | str,
     maturity_date: date | datetime | str,
@@ -93,13 +115,14 @@ def price_from_ytm(
     base = 1.0 + r
     if base <= 0.0:
         raise ValueError("1 + ytm/payment_frequency must be positive")
+    log_base = math.log(base)
 
     price = 0.0
     for dt, amount in flows:
         if dt <= settlement:
             continue
         t = dc_func(settlement, dt)
-        discount = base ** (-freq * t)
+        discount = math.exp(-freq * t * log_base)
         price += amount * discount
 
     if as_clean:
@@ -143,18 +166,17 @@ def ytm_from_price(
         return 0.0
 
     def func_and_deriv(y: float) -> Tuple[float, float]:
-        r = y / freq
-        base = 1.0 + r
-        if base <= 0.0:
-            base = 1e-8
+        if y <= -freq + 1e-12:
+            y = -freq + 1e-12
+        log_base = math.log1p(y / freq)
         price = 0.0
         deriv = 0.0
         for dt, amount in future_flows:
             t = dc_func(settlement, dt)
-            exponent = -freq * t
-            discount = base ** exponent
+            expo = -freq * t * log_base
+            discount = math.exp(expo)
             price += amount * discount
-            deriv += -amount * t * discount / base
+            deriv += amount * discount * (-freq * t) / (freq + y)
         return price - price_dirty, deriv
 
     initial = guess if guess is not None else max(coupon, 0.02)
@@ -173,25 +195,3 @@ def ytm_from_price(
         raise
     logger.debug("YTM solved after %s iterations via %s", result.iterations, result.method)
     return result.root
-
-
-def _price_from_curve(
-    cashflows: Iterable[Cashflow],
-    *,
-    settlement_date: date,
-    discount_factor,
-    day_count: str = "ACT/365F",
-    as_clean: bool = False,
-    accrued: float = 0.0,
-) -> float:
-    """Internal helper: price from discount factors supplied by callable."""
-    dc_func = get_day_count(day_count)
-    dirty = 0.0
-    for dt, amount in cashflows:
-        if dt <= settlement_date:
-            continue
-        t = dc_func(settlement_date, dt)
-        dirty += amount * discount_factor(t)
-    if as_clean:
-        return dirty - accrued
-    return dirty

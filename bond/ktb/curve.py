@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Iterable, Tuple, List
 
 import bisect
 import logging
@@ -51,6 +51,39 @@ def _interpolate_simple_zero_rate(
     return zero_rates[keys[-1]]
 
 
+def _coupon_schedule_times(tenor: float, frequency: int) -> List[float]:
+    """Return coupon payment times (in years) up to tenor."""
+    step = 1.0 / frequency
+    times: List[float] = []
+    t = step
+    eps = 1e-12
+    while t < tenor - eps:
+        times.append(round(t, 12))
+        t += step
+    times.append(round(tenor, 12))
+    return times
+
+
+def _interpolate_log_df(
+    t: float,
+    known_times: List[float],
+    known_dfs: Dict[float, float],
+) -> float:
+    if t <= known_times[0] + 1e-12:
+        return known_dfs[known_times[0]]
+    idx = bisect.bisect_right(known_times, t)
+    if idx >= len(known_times):
+        return known_dfs[known_times[-1]]
+    t0 = known_times[idx - 1]
+    t1 = known_times[idx]
+    if abs(t1 - t0) < 1e-12:
+        return known_dfs[t0]
+    w = (t - t0) / (t1 - t0)
+    ln_df0 = math.log(known_dfs[t0])
+    ln_df1 = math.log(known_dfs[t1])
+    return math.exp(ln_df0 + w * (ln_df1 - ln_df0))
+
+
 def _bootstrap_zero_rates_from_par(
     par_nodes: Dict[float, float],
     frequency: int,
@@ -61,68 +94,53 @@ def _bootstrap_zero_rates_from_par(
     if not par_nodes:
         raise ValueError("par_nodes must not be empty")
 
-    ytm_decimal: Dict[float, float] = {}
+    ytm_nodes: Dict[float, float] = {}
     for tenor, rate in par_nodes.items():
-        val = float(rate)
-        if abs(val) >= 1.0:
-            val /= 100.0
-        ytm_decimal[float(tenor)] = val
-    zero_simple: Dict[float, float] = {}
+        value = float(rate)
+        if abs(value) >= 1.0:
+            value /= 100.0
+        ytm_nodes[float(tenor)] = value
 
-    if 0.25 in ytm_decimal:
-        zero_simple[0.25] = ytm_decimal[0.25]
+    tenors = sorted(ytm_nodes.keys())
+    if not tenors:
+        raise ValueError("par_nodes must not be empty")
 
-    if 0.5 in ytm_decimal:
-        c = ytm_decimal[0.5]
-        zero_simple[0.5] = (1.0 + c / 2.0) ** 2 - 1.0
-
-    tiny = 1e-9
-    tenors = sorted(ytm_decimal.keys())
+    known_times: List[float] = [0.0]
+    known_dfs: Dict[float, float] = {0.0: 1.0}
 
     for tenor in tenors:
-        if tenor <= 0.5 + tiny:
-            continue
-        if abs((tenor / 0.5) - round(tenor / 0.5)) > 1e-9 and abs(tenor - 0.75) > 1e-9:
-            continue
-
-        coupon_rate = ytm_decimal[tenor]
-        coupon_payment = coupon_rate / frequency
-
-        known_ts = sorted(zero_simple.keys())
-        if not known_ts:
-            raise ValueError("Par curve bootstrap requires short-end anchors")
-        t_lo = max(t for t in known_ts if t < tenor)
-        df_lo = 1.0 / (1.0 + zero_simple[t_lo]) ** t_lo
-
+        coupon_rate = ytm_nodes[tenor]
+        times = _coupon_schedule_times(tenor, frequency)
         const_pv = 0.0
-        coeffs: list[tuple[float, float]] = []
+        coeffs: List[Tuple[float, float, float, float]] = []  # amount, base, exponent, time
+        prev = 0.0
+        max_known = known_times[-1]
 
-        periods = int((tenor - tiny) * frequency)
-        for period in range(1, periods + 1):
-            t = period / frequency
-            if t >= tenor - tiny:
-                break
-            if t <= t_lo + tiny:
-                z_t = zero_simple.get(t)
-                if z_t is None:
-                    z_t = _interpolate_simple_zero_rate(t, zero_simple)
-                df_t = 1.0 / (1.0 + z_t) ** t
-                const_pv += coupon_payment * df_t
+        for t in times[:-1]:
+            delta = t - prev
+            prev = t
+            payment = coupon_rate * delta
+            if t <= max_known + 1e-12:
+                df_t = _interpolate_log_df(t, known_times, known_dfs)
+                const_pv += payment * df_t
             else:
+                t_lo = max_known
+                if abs(tenor - t_lo) < 1e-12:
+                    # Should not happen, but guard to avoid division by zero
+                    coeffs.append((payment, 1.0, 1.0))
+                    continue
                 w = (t - t_lo) / (tenor - t_lo)
-                K = coupon_payment * (df_lo ** (1.0 - w))
-                coeffs.append((K, w))
+                base = known_dfs[t_lo] ** (1.0 - w)
+                coeffs.append((payment, base, w, t))
 
-        delta_last = tenor - (periods / frequency if periods > 0 else 0.0)
-        if delta_last <= tiny:
-            delta_last = 1.0 / frequency
-
-        final_payment = coupon_payment * (delta_last * frequency) + 1.0
+        prev = times[-2] if len(times) > 1 else 0.0
+        final_delta = tenor - prev
+        final_payment = coupon_rate * final_delta + 1.0
 
         def f(df_T: float) -> float:
             s = const_pv + final_payment * df_T
-            for K, w in coeffs:
-                s += K * (df_T**w)
+            for amt, base, w, _ in coeffs:
+                s += amt * base * (df_T**w)
             return s - 1.0
 
         lo, hi = 1e-12, 1.0
@@ -133,9 +151,9 @@ def _bootstrap_zero_rates_from_par(
             df_T = hi
         else:
             df_T = 0.5 * (lo + hi)
-            for _ in range(80):
+            for _ in range(120):
                 fm = f(df_T)
-                if abs(fm) < 1e-12:
+                if abs(fm) < 1e-14:
                     break
                 if f_lo * fm <= 0:
                     hi, f_hi = df_T, fm
@@ -143,13 +161,22 @@ def _bootstrap_zero_rates_from_par(
                     lo, f_lo = df_T, fm
                 df_T = 0.5 * (lo + hi)
 
-        zero_simple[tenor] = df_T ** (-1.0 / tenor) - 1.0
+        df_T = max(min(df_T, 1.0), 1e-12)
 
-    zero_cont = {
-        tenor: -math.log(1.0 / (1.0 + rate) ** tenor) / tenor
-        for tenor, rate in zero_simple.items()
+        for _, base, w, t in coeffs:
+            df_t = base * (df_T**w)
+            if t not in known_dfs:
+                bisect.insort(known_times, t)
+            known_dfs[t] = df_t
+
+        if tenor not in known_dfs:
+            bisect.insort(known_times, tenor)
+        known_dfs[tenor] = df_T
+
+    zero_rates = {
+        tenor: -math.log(df) / tenor for tenor, df in known_dfs.items() if tenor > 0
     }
-    return dict(sorted(zero_cont.items()))
+    return dict(sorted(zero_rates.items()))
 
 
 class ZeroCurve:
@@ -206,34 +233,64 @@ class ZeroCurve:
         self._nodes = normalized
         self._tenors = list(self._nodes.keys())
         self._zeros = list(self._nodes.values())
+        self._log_dfs = [
+            math.log(self._df_from_zero_rate(z, t))
+            for t, z in zip(self._tenors, self._zeros)
+        ]
+
+    def _df_from_zero_rate(self, zero_rate: float, tenor: float) -> float:
+        if tenor <= 0:
+            return 1.0
+        if self.comp == "cont":
+            return math.exp(-zero_rate * tenor)
+        if self.comp == "simple":
+            return 1.0 / (1.0 + zero_rate * tenor)
+        if self.comp == "street":
+            m = self._street_m or self._frequency
+            return (1.0 + zero_rate / m) ** (-m * tenor)
+        raise ValueError(f"Unsupported comp mode: {self.comp}")
 
     def zero(self, t: float) -> float:
         """Return interpolated zero rate (decimal) at tenor t."""
         if t <= 0:
             return self._zeros[0]
-        idx = bisect.bisect_left(self._tenors, t)
-        if idx == 0:
+        df_t = self.df(t)
+        if df_t <= 0:
             return self._zeros[0]
-        if idx >= len(self._tenors):
-            return self._zeros[-1]
-        t0 = self._tenors[idx - 1]
-        t1 = self._tenors[idx]
-        z0 = self._zeros[idx - 1]
-        z1 = self._zeros[idx]
-        weight = (t - t0) / (t1 - t0)
-        return z0 + (z1 - z0) * weight
+        if self.comp == "cont":
+            return -math.log(df_t) / t
+        if self.comp == "simple":
+            return (1.0 / df_t - 1.0) / t
+        if self.comp == "street":
+            m = self._street_m or self._frequency
+            return m * (df_t ** (-1.0 / (m * t)) - 1.0)
+        raise ValueError(f"Unsupported comp mode: {self.comp}")
 
     def df(self, t: float) -> float:
         """Return discount factor for tenor t."""
-        z = self.zero(t)
-        if self.comp == "cont":
-            return math.exp(-z * t)
-        if self.comp == "simple":
-            return 1.0 / (1.0 + z * t)
-        if self.comp == "street":
-            m = self._street_m or 2
-            return (1.0 + z / m) ** (-m * t)
-        raise ValueError(f"Unsupported comp mode: {self.comp}")
+        if t <= 0:
+            return 1.0
+
+        tenors = self._tenors
+        log_dfs = self._log_dfs
+        if not tenors:
+            return 1.0
+
+        if t <= tenors[0]:
+            scale = t / tenors[0]
+            return math.exp(log_dfs[0] * scale)
+        if t >= tenors[-1]:
+            scale = t / tenors[-1]
+            return math.exp(log_dfs[-1] * scale)
+
+        idx = bisect.bisect_right(tenors, t)
+        t0 = tenors[idx - 1]
+        t1 = tenors[idx]
+        log_df0 = log_dfs[idx - 1]
+        log_df1 = log_dfs[idx]
+        weight = (t - t0) / (t1 - t0)
+        log_df = log_df0 + weight * (log_df1 - log_df0)
+        return math.exp(log_df)
 
     def clone_with_shifted_node(self, tenor: float, shift_bp: float) -> "ZeroCurve":
         """Return a new curve with the specified node shifted by shift_bp basis points."""
@@ -271,7 +328,6 @@ class ZeroCurve:
         cls,
         curve_date: date | datetime | str,
         par_nodes: Dict[float, float],
-        *,
         comp: str = "cont",
         frequency: int = 2,
     ) -> "ZeroCurve":

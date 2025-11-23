@@ -1,224 +1,37 @@
-
----
-
-# Codex Prompt — **Refactor & Extend KTB Pricing** (do **not** touch `futures.py`)
-
-## Scope & Non-negotiables
-
-* Work **only** inside: `bond/ktb/` and `utils/`.
-* **Do not modify** `bond/ktb/futures.py` (freeze it; treat as read-only).
-* Create/run all debug runners in **`.debug/`**.
-* Sample data lives at `test/test_data.py`. **Import** it in debug/tests; **do not embed** it in library modules.
-* In this project, **KTB prices are quoted as DIRTY prices** (i.e., include accrued interest). Provide helpers to get clean if needed.
-* CWD: `/Users/meenmo/Documents/workspace/`
-* PYTHON EXECUTABLE TO USE: `/Users/meenmo/Documents/workspace/ficclib/.venv/bin/python`
-* The existing working module, `ficclib/.venv/bin/python -m ficclib.bond.ktb.futures`, must pass.
-* Write sample execution files under `/Users/meenmo/Documents/workspace/test/`: Work on `ytm.py` (verify whether calculated YTM matches the target YTM), `price.py` (verify whether calculated price matches the target price), and `krd.py` (verify whether calculated KRD matches the target KRD) respectively to test each function given `test_data.py`.
-
-## Objectives
-
-1. **Solve YTM given DIRTY price** (semiannual KTB).
-2. **Solve DIRTY price given YTM**.
-3. **Key Rate Delta (KRD)** using a **zero curve** with node-specific –1 bp shifts and re-interpolation.
-
-## Refactor Mandate (aggressive, but safe)
-
-Refactor as much existing code as possible **without changing public behavior** (except where clarified here), and **without touching `bond/ktb/futures.py`**:
-
-* Eliminate dead/duplicated code; collapse helpers into `utils/`.
-* Replace implicit globals with explicit parameters; add **type hints** and **docstrings**.
-* Separate concerns: schedule/accrual ↔ pricing ↔ curve ↔ rootfinding.
-* Make units consistent (rates as **decimals** internally).
-* Keep modules ≤ ~300 LOC; functions ≤ ~50 LOC where feasible.
-* Preserve existing file paths for imports unless trivially improved; add **compat shims** if you must move names.
-
-## Target Package Layout
-
-```
-bond/ktb/
-  __init__.py
-  analytics.py        # price_from_ytm, ytm_from_price (DIRTY by default)
-  curve.py            # ZeroCurve: zero(t), df(t), clone_with_shifted_node(...)
-  krd.py              # key_rate_delta, batch_key_rate_delta (curve-discounting)
-  # DO NOT EDIT:
-  futures.py          # <leave unchanged>
-
-utils/
-  daycount.py         # ACT/365F; registry if needed
-  schedule.py         # coupon schedule (semiannual)
-  cashflows.py        # coupon CFs, accrued_interest, price_clean<->dirty helpers
-  rootfinding.py      # newton_raphson + brent/bisection fallback
-```
-
-## Public API (keep stable)
-
-```python
-# bond/ktb/analytics.py
-def price_from_ytm(issue_date, maturity_date, coupon, payment_frequency,
-                   ytm, face=10_000, day_count="ACT/365F", as_clean=False) -> float: ...
-
-def ytm_from_price(issue_date, maturity_date, coupon, payment_frequency,
-                   price_dirty, face=10_000, day_count="ACT/365F",
-                   guess: float | None = None) -> float: ...
-
-# bond/ktb/curve.py
-class ZeroCurve:
-    def __init__(self, curve_date, nodes: dict[float, float], comp: str = "cont"): ...
-    def zero(self, t: float) -> float: ...
-    def df(self, t: float) -> float: ...
-    def clone_with_shifted_node(self, tenor: float, shift_bp: float) -> "ZeroCurve": ...
-
-# bond/ktb/krd.py
-def key_rate_delta(bond_spec: dict, curve: ZeroCurve, key_tenor_years: float,
-                   as_clean=True) -> float: ...
-def batch_key_rate_delta(bonds: list[dict], curve: ZeroCurve,
-                         key_tenors: list[float], as_clean=True) -> dict: ...
-```
-
-## Formulas & Conventions
-
-### Year fraction (ACT/365F)
-$$
-\left[
-\text{yearfrac}(d_1,d_2)=\frac{\text{ActualDays}(d_1,d_2)}{365}
-\right]
-$$
-
-
----
-
-### Accrued Interest (AI)
-
-Let $C = F \cdot \tfrac{\text{coupon}}{m}$.
-With last/next coupon dates $d_L, d_N$ and settlement $d_S$:
-
-$$
-\text{AI} = C \cdot \frac{\text{yearfrac}(d_L, d_S)}{\text{yearfrac}(d_L, d_N)}
-$$
-
-Dirty = Clean + AI.
-(**KTB convention:** inputs/outputs default to **DIRTY**.)
-
----
-
-### Price from YTM (DIRTY, street comp with frequency $m$)
-
-Let $r = \tfrac{y}{m}$, and $t_i$ = ACT/365F from **settlement = curve_date** to payment $i$.
-Coupons $CF_i = C$, final $CF_N = C + F$:
-
-$$
-P_{\text{dirty}}(y) = \sum_{i=1}^{N} \frac{CF_i}{(1 + r)^{m t_i}}
-$$
-
----
-
-### YTM from DIRTY price (root solve)
-
-Solve $f(y) = P_{\text{dirty}}(y) - P^{*}_{\text{dirty}} = 0$
-via **Newton–Raphson** with analytic derivative:
-
-$$
-\frac{dP}{dy} = - \sum_{i=1}^{N} CF_i , t_i , (1 + r)^{-m t_i - 1}
-$$
-
-Safeguards: clamp $\Delta y$ to ±100 bps; fallback to **Brent/bisection** if derivative is tiny or NR diverges.
-Converge when $|P - P^{*}| \le 10^{-6}$ or $|\Delta y| \le 10^{-10}$.
-
----
-
-### Curve-discounted price (for KRD)
-
-Interpolate **linearly in zero-rate space** over maturities.
-With continuous compounding by default:
-
-$$
-z(T) = \text{lin.interp}(T), \quad
-DF(T) = e^{-z(T),T}, \quad
-P_{\text{dirty,curve}} = \sum_i CF_i \cdot DF(t_i)
-$$
-
----
-
-### Key Rate Delta (node-specific –1 bp)
-
-Shift only node $T_k$ by $-1\text{ bp} = -0.0001$ (decimal), rebuild interpolation, and reprice:
-
-$$
-\text{KRD}(T_k) = P_{\text{as-is}} - P_{\text{shift}(T_k,,-1\text{ bp})}
-$$
-
-Use **curve-discounting** (not YTM) to reflect the node move.
-
----
-
-## Ordered Tasks
-
-### Phase 1 — Survey & Refactor (no features yet)
-
-1. **Read-only scan** of `bond/ktb/` and `utils/`; identify:
-
-   * duplicate helpers, hidden state, untyped functions, unreachable code.
-2. **Do not edit** `bond/ktb/futures.py`—add it to a local “do-not-touch” list.
-3. Consolidate utilities into `utils/`:
-
-   * `daycount.py` (ACT/365F), `schedule.py`, `cashflows.py`, `rootfinding.py`.
-4. Normalize **units** (all rates in decimals internally).
-5. Add type hints, docstrings (with the formulas above), and lightweight input validation.
-6. Keep public symbols stable; if renaming internals, update imports within `bond/ktb/`.
-
-### Phase 2 — Curve engine
-
-7. Implement `ZeroCurve`:
-
-   * store sorted nodes `{tenor_years: zero_decimal}`;
-   * `zero(t)`: piecewise-linear; flat extrapolation beyond ends;
-   * `df(t)`: `exp(-z(t)*t)` by default; future-proof a `comp` switch;
-   * `clone_with_shifted_node(tenor, shift_bp)`: shift one node in **decimal** by `shift_bp/10_000`.
-
-### Phase 3 — Pricing APIs
-
-8. `price_from_ytm(...)` (DIRTY by default; `as_clean=True` subtracts AI).
-9. `ytm_from_price(...)` using **NR + Brent/bisection fallback** (tolerances as above).
-10. Internal helper `_price_from_curve(...)` (DIRTY/CLEAN) using `ZeroCurve.df`.
-
-### Phase 4 — KRD
-
-11. `key_rate_delta(...)` and `batch_key_rate_delta(...)` per definition (curve-discounting, –1 bp at the node).
-
-### Phase 5 — Debug & Tests in `.debug/`
-
-12. `.debug/quickcheck_price_ytm.py`
-
-* Import sample bonds; `ytm_from_price(price_dirty)` ≈ provided YTM (abs err ≤ 1e-4).
-* `price_from_ytm(ytm)` ≈ provided **DIRTY** price (abs err ≤ 0.05).
-
-13. `.debug/quickcheck_krd.py`
-
-* Build `ZeroCurve` from the sample curve; recompute each bond’s KRD tenors; compare to sample KRD (≤ 1e-6).
-
-14. `.debug/profile_rootfinding.py`
-
-* Stress initial guesses; print iterations/steps; assert fallback kicks in on flat derivatives.
-
-### Phase 6 — Hygiene
-
-15. Add lightweight logging (DEBUG in `.debug/`, silent by default in lib).
-16. Ensure **no diffs in `bond/ktb/futures.py`**. (Locally: `git update-index --assume-unchanged bond/ktb/futures.py` if helpful.)
-17. Ruff/PEP8 clean; keep functions cohesive; document corner cases (coupon date, short accruals).
-
-## Runbook (local)
-
-* Round-trip & KRD checks:
-
-  ```
-  python .debug/quickcheck_price_ytm.py
-  python .debug/quickcheck_krd.py
-  python .debug/profile_rootfinding.py
-  ```
-
-## Notes & Options
-
-* If matching an external convention (e.g., KOFIA compounding not continuous) is required later, expose `comp="cont" | "street(m=2)"` in `ZeroCurve`.
-* If Newton oscillates near zero-coupon short bonds, widen Brent bracket (e.g., y in [-2%, 20%]) with DF guards.
-
----
+## Task(Key Rate Delta/Duration of KTB: Korea Treasury Bond)
+PYTHON EXECUTABLE TO USE: ficclib/.venv/bin/python (MUST)
+
+
+Bring `test/krd.py` Method 2 (price-based KRD) in line with Bloomberg/TARGET_KRD methodology, taking into account that KTB prices are **dirty** by default.
+
+## Context
+
+- `test/krd.py` currently runs two methods:
+  1. Method 1: `_price_bond_with_par_curve` + `_shift_par_curve` (par/YTM bump inside krd.py).
+  2. Method 2: bootstrap discount factors from `TARGET_PRICE`, convert to a zero curve, and build a par(ytm) curve from the zero curve. Finally, bump the par curve by –1 bp on each tenor.
+- Method 2 now uses ACT/ACT but still bumps zero rates and computes `P_bumped − P_base`, so every KRD remains positive.
+- We already bootstrap DFs from prices (Method 2). Need to convert those DFs into an equivalent par grid, apply tenor bumps in par space, rebuild zero curves, reprice, and use the dirty-price difference.
+
+## Requirements
+
+1. **Day Count / Pricing basis**:
+   - Use ACT/ACT for year fractions throughout.
+   - Treat KTB prices as DIRTY by default (only subtract accrued interest if we explicitly want clean KRDs; Bloomberg targets appear dirty).
+2. **Bootstrapped Curve**:
+   - Build discount factors via `bootstrap_dfs_from_bonds` using all bonds with `TARGET_PRICE`.
+   - Interpolate the DFs to CURVE_T tenors.
+   - Convert those DFs into both zero rates and par (YTM) percentages (semiannual) so CURVE_T reflects the curve implied by market prices.
+3. **Method 2 KRD**:
+   - Base price: price each test bond (4 ISINs) using `KTB.price_from_zero_curve` with the bootstrapped zero curve (dirty price).
+   - For each key tenor in CURVE_T:
+     * Copy the par grid and shift only that tenor **down by 1 bp**.
+     * Rebuild a zero curve from the bumped par grid (`ZeroCurve.from_par_yields`).
+     * Reprice the bond; `KRD = P_bumped - P_base` (dirty price difference).
+   - Print the results and compare to `TARGET_KRD` with suitable tolerance.
+4. **Method 1**: keep for reference but flag as legacy; Method 2 should become authoritative once it matches targets.
+5. **Outputs**: run `ficclib/.venv/bin/python test/krd.py` to exercise both methods and summarize pass/fail vs targets.
+
+## Notes
+- I am curious the all positive trend in the Calculated KRD, while TARGET_KRD and Bloomberg's KRD shows negative trend in the earlier tenors and clear positive numbers at the end. 
+- Ensure the par conversion uses 0.5-year coupon spacing (semiannual). Interpolate missing par tenors linearly.
+- Since KTB prices are dirty by default, the ΔP we compare to `TARGET_KRD` should also be dirty (unless we confirm those targets are clean). Adjust if necessary once we see the magnitudes.

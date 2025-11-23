@@ -1,11 +1,12 @@
 from datetime import date, datetime
-from typing import List, Tuple, Union, Optional
+from typing import List, Tuple, Union, Optional, Sequence
 
 from dateutil.relativedelta import relativedelta
 import numpy as np
 
 from ficclib.bond.utils.date import to_date
 from ficclib.bond.ktb.curve_types import DiscountFactorNode
+from ficclib.bond.ktb.curve import ZeroCurve
 
 DAYS_IN_YEAR = 365
 
@@ -136,22 +137,39 @@ class KTB:
         return price_at_next / (1 + accrual_factor * ytm / 2)
 
     def price_from_zero_curve(
-        self, valuation_date: date, dfs: List[DiscountFactorNode]
+        self,
+        valuation_date: date,
+        discount_curve: Union[ZeroCurve, Sequence[DiscountFactorNode]],
     ) -> float:
-        """Calculate bond price using zero-coupon discount factors."""
+        """Price the bond by discounting cash flows from a zero curve."""
         val_date = to_date(valuation_date)
         flows = self.cash_flows()
-        price = 0.0
+        if not flows:
+            return 0.0
 
+        def build_df_lookup():
+            if isinstance(discount_curve, ZeroCurve):
+                return discount_curve.df
+            if not discount_curve:
+                raise ValueError("discount_curve must not be empty")
+
+            nodes = sorted(
+                discount_curve,
+                key=lambda node: node.years_from_valuation,
+            )
+            times = [node.years_from_valuation for node in nodes]
+            dfs = [node.discount_factor for node in nodes]
+
+            return lambda t: self._log_linear_interpolation(times, dfs, t)
+
+        df_lookup = build_df_lookup()
+
+        price = 0.0
         for coupon_date, amount in flows:
-            if coupon_date > val_date:
-                time_to_coupon = (coupon_date - val_date).days / DAYS_IN_YEAR
-                df = self._log_linear_interpolation(
-                    [node.years_from_valuation for node in dfs],
-                    [node.discount_factor for node in dfs],
-                    time_to_coupon,
-                )
-                price += amount * df
+            if coupon_date <= val_date:
+                continue
+            time_to_coupon = (coupon_date - val_date).days / DAYS_IN_YEAR
+            price += amount * df_lookup(time_to_coupon)
 
         return price
 

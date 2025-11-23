@@ -8,9 +8,6 @@ from datetime import date
 
 from ficclib.bond.ktb.bond import KTB
 from ficclib.bond.ktb.curve_types import DiscountFactorNode
-from .utils import (
-    build_df_zero_grid,  # not used here after refactor, but kept for API parity if needed
-)
 
 
 def bootstrap_dfs_from_bonds(
@@ -133,7 +130,6 @@ def bootstrap_dfs_from_bonds(
         )
 
     return nodes
-
 
 def build_zero_curve_from_bonds(
     bonds: List[Tuple[Union[str, date], Union[str, date], float, float]],
