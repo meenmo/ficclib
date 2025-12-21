@@ -10,17 +10,20 @@ class FuturesParams:
         self.today = today
         self.cd91 = self.load_cd91()
 
-    def engine(self):
+    def mysql_engine(self):
         return DatabaseEngine.get_mysql_engine()
+    
+    def postgres_engine(self):
+        return DatabaseEngine.get_postgres_engine()
 
     def load_cd91(self):
-        query = "SELECT `CD` FROM `단기금리` WHERE Date = %s"
-        df = pd.read_sql(query, self.engine(), params=(self.today,))
+        query = "SELECT value FROM marketdata.benchmark_rates WHERE date=%s AND ticker='KWCDC KSDA Curncy'"
+        df = pd.read_sql(query, self.postgres_engine(), params=(self.today,))
         return df.iloc[0].item() / 100
 
     def load_basket_data(self, tenor):
         query = "SELECT * FROM `KTB_Futures_%sY` WHERE Date = %s AND `근월물` = 'Y'"
-        return pd.read_sql(query, self.engine(), params=(tenor, self.today))
+        return pd.read_sql(query, self.mysql_engine(), params=(tenor, self.today))
 
     def basket(self, tenor):
         basket = Basket()
